@@ -1,1 +1,0 @@
-# Dedektif-Semra
