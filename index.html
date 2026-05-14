@@ -2,455 +2,337 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Dedektif: Saatçinin Sırrı</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Protocol | System Repair</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Cormorant+Garamond:wght@600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&display=swap');
 
-        :root { --main: #8f9fa6; --dark: #0f1115; --accent: #4a90e2; --alert: #e24a4a; }
-        body { margin: 0; background: #050505; color: var(--main); font-family: 'Special Elite', monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; overflow: hidden; }
-        
-        #game-container { width: 1050px; height: 680px; background: var(--dark); border: 2px solid #222; box-shadow: 0 0 40px rgba(0,0,0,1); display: flex; flex-direction: column; position: relative; }
-        
-        #header { padding: 10px 20px; background: #0a0c0f; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; z-index: 40; }
-        #title { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: #fff; letter-spacing: 2px; }
-        #help { font-size: 12px; color: #666; }
+        :root {
+            --neon-green: #00ff41;
+            --neon-red: #ff3131;
+            --pcb-green: #0a2408;
+            --wire-y: #ffff00;
+            --wire-p: #ff00ff;
+        }
 
-        #scene-area { flex: 1; position: relative; overflow: hidden; background: #000; }
-        #scene-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(20%) contrast(1.1) brightness(0.6); transition: opacity 0.8s; opacity: 0; }
-        
-        /* Odak Noktaları z-index: 30 yapılarak metnin hep üstünde kalması sağlandı */
-        .node { position: absolute; width: 34px; height: 34px; background: rgba(15, 17, 21, 0.8); border: 1px solid var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; transform: translate(-50%, -50%); z-index: 30; box-shadow: 0 0 10px rgba(74, 144, 226, 0.3); color: var(--accent); font-size: 16px; }
-        .node:hover { background: var(--accent); color: #fff; transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 20px rgba(74, 144, 226, 0.8); }
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            color: var(--neon-green);
+            font-family: 'Fira Code', monospace;
+            overflow: hidden;
+        }
 
-        #dialog-box { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 80%; background: rgba(0, 0, 0, 0.85); border: 1px solid #333; padding: 15px; text-align: center; font-size: 15px; line-height: 1.5; z-index: 20; color: #ddd; min-height: 40px; text-shadow: 1px 1px 2px #000; border-left: 3px solid var(--accent); pointer-events: none; }
+        /* Arka Plan Terminal Efekti */
+        #terminal-bg {
+            position: fixed;
+            top: 10px; left: 10px;
+            font-size: 10px;
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-        #inventory-panel { height: 130px; background: #0a0c0f; border-top: 1px solid #222; padding: 10px 20px; display: flex; flex-direction: column; z-index: 40; }
-        #inv-title { font-size: 12px; color: #666; margin-bottom: 5px; text-transform: uppercase; }
-        #inv-slots { display: flex; gap: 10px; overflow-x: auto; flex: 1; align-items: center; }
-        
-        .item { width: 70px; height: 70px; background: #15181e; border: 1px solid #333; display: flex; justify-content: center; align-items: center; font-size: 11px; text-align: center; padding: 5px; cursor: pointer; transition: 0.2s; border-radius: 4px; color: #aaa; box-sizing: border-box; }
-        .item:hover { border-color: #666; background: #1c2028; }
-        .item.selected { border-color: var(--accent); background: rgba(74, 144, 226, 0.1); color: #fff; box-shadow: 0 0 10px rgba(74, 144, 226, 0.5); }
+        #main-wrapper {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            transition: filter 0.5s ease;
+        }
 
-        #sys-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: var(--alert); color: white; padding: 10px 20px; border-radius: 5px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 150; }
+        /* Devre Kartı Tasarımı */
+        .pcb-board {
+            position: relative;
+            width: 850px;
+            height: 550px;
+            background: radial-gradient(circle, #143d10 0%, #050f04 100%);
+            border: 2px solid #1a5c15;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9), inset 0 0 100px rgba(0,255,65,0.05);
+            display: flex;
+            justify-content: space-between;
+            padding: 40px;
+            box-sizing: border-box;
+        }
 
-        .overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; flex-direction: column; }
-        
-        /* Şifre Kutusu */
-        .modal-box { background: #111; padding: 30px; border: 2px solid #333; text-align: center; border-radius: 8px; }
-        .modal-box input { padding: 10px; font-size: 20px; text-align: center; background: #000; color: #fff; border: 1px solid var(--accent); width: 150px; letter-spacing: 5px; font-family: inherit; margin: 15px 0; }
-        .modal-box button { background: var(--accent); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-family: inherit; font-weight: bold; margin: 5px; }
-        .modal-box button:hover { background: #fff; }
+        .pcb-grid {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
 
-        /* Yüzleşme (Deduction) Ekranı */
-        #deduction-box { width: 500px; text-align: left; }
-        .deduct-group { margin-bottom: 20px; }
-        .deduct-group label { display: block; color: var(--accent); margin-bottom: 5px; font-size: 14px; }
-        .deduct-group select { width: 100%; padding: 10px; background: #000; color: #fff; border: 1px solid #444; font-family: inherit; font-size: 16px; cursor: pointer; }
-        
+        /* Portlar ve Soketler */
+        .port-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            height: 100%;
+        }
+
+        .socket {
+            width: 50px;
+            height: 50px;
+            background: #111;
+            border: 3px solid #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .socket:hover { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+        .socket.active { border-color: var(--neon-green); box-shadow: 0 0 20px var(--neon-green); }
+
+        .wire-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        /* Kablo SVG */
+        #svg-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        .cable {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 0.8s ease forwards;
+        }
+
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+
+        /* Sistem Çöküş Ekranı */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: none;
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .warning-text {
+            font-size: 4rem;
+            color: var(--neon-red);
+            text-shadow: 0 0 20px var(--neon-red);
+            margin: 0;
+            animation: pulse 0.1s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* Onarım Araçları */
+        .repair-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 50px;
+        }
+
+        .tool-card {
+            padding: 20px 40px;
+            border: 1px solid var(--neon-green);
+            background: rgba(0, 255, 65, 0.05);
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .tool-card:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-green);
+        }
+
+        .tool-card.used {
+            opacity: 0.2;
+            pointer-events: none;
+            border-color: #333;
+        }
+
+        #final-speech {
+            display: none;
+            max-width: 800px;
+            font-size: 1.5rem;
+            line-height: 1.8;
+            color: #fff;
+        }
+
+        .burning {
+            filter: brightness(2) contrast(3) hue-rotate(300deg) !important;
+            animation: shake 0.2s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(5px, 5px); }
+            50% { transform: translate(-5px, 0); }
+            75% { transform: translate(2px, -5px); }
+        }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="sys-msg">Sistem Mesajı</div>
-    
-    <div id="header">
-        <div id="title">DOSYA: Saatçinin Sırrı</div>
-        <div id="help">NASIL OYNANIR: 🔍 ikonlarına tıkla. Eşyaları seçip ikonların üzerinde kullan. Envanterde iki eşyayı art arda seçerek birleştir.</div>
+    <div id="terminal-bg"></div>
+
+    <div id="main-wrapper">
+        <h2 id="header-status">CORE SYSTEM: STABLE</h2>
+        <div class="pcb-board" id="board">
+            <div class="pcb-grid"></div>
+            <svg id="svg-canvas"></svg>
+            
+            <!-- Girişler -->
+            <div class="port-group">
+                <div class="socket" data-color="#ff3131"><div class="wire-dot" style="color: #ff3131; background: #ff3131;"></div></div>
+                <div class="socket" data-color="#3182ff"><div class="wire-dot" style="color: #3182ff; background: #3182ff;"></div></div>
+                <div class="socket" data-color="#31ff82"><div class="wire-dot" style="color: #31ff82; background: #31ff82;"></div></div>
+                <div class="socket" data-color="yellow" id="source-yellow"><div class="wire-dot" style="color: yellow; background: yellow;"></div></div>
+            </div>
+
+            <!-- Çıkışlar -->
+            <div class="port-group">
+                <div class="socket" data-color="#ff3131"><div class="wire-dot" style="color: #ff3131; background: #ff3131;"></div></div>
+                <div class="socket" data-color="#3182ff"><div class="wire-dot" style="color: #3182ff; background: #3182ff;"></div></div>
+                <div class="socket" data-color="#31ff82"><div class="wire-dot" style="color: #31ff82; background: #31ff82;"></div></div>
+                <div class="socket" data-color="purple"><div class="wire-dot" style="color: purple; background: purple;"></div></div>
+            </div>
+        </div>
+        <p style="margin-top: 20px; opacity: 0.6;">Tüm devreleri eşleştirerek sistemi aktif edin.</p>
     </div>
 
-    <div id="scene-area">
-        <img id="scene-img" src="" alt="Sahne">
-        <div id="nodes-container"></div>
-        <div id="dialog-box">Hikaye yükleniyor...</div>
-    </div>
+    <!-- Felaket ve Onarım Katmanı -->
+    <div id="overlay">
+        <div id="fail-ui">
+            <h1 class="warning-text">SİSTEM İMHA EDİLDİ</h1>
+            <p style="letter-spacing: 5px; margin-top: 20px;">HATA KODU: Bir Yalan Tüm Doğruları Şüpheye Düşürür</p>
+        </div>
 
-    <div id="inventory-panel">
-        <div id="inv-title">Envanter (Seçmek için tıkla, iptal için tekrar tıkla)</div>
-        <div id="inv-slots"></div>
-    </div>
-    
-    <!-- Kasa Şifresi Ekranı -->
-    <div id="padlock-overlay" class="overlay">
-        <div class="modal-box">
-            <h3 style="margin:0 0 10px 0; color:#fff;">ŞİFRE KİLİDİ</h3>
-            <p style="font-size: 14px; color:#aaa;" id="pad-hint">Kombinasyonu Girin</p>
-            <input type="text" id="pad-input" autocomplete="off" maxlength="10">
-            <br>
-            <button onclick="checkPassword()">KİLİDİ AÇ</button>
-            <button onclick="closePadlock()" style="background:#333; color:#fff;">İPTAL</button>
+        <div id="repair-ui" style="display: none;">
+            <h3>Yıkılanı onarmak, inşa etmekten zordur.</h3>
+            <div class="repair-grid">
+                <div class="tool-card" onclick="repair(this)">Çaba</div>
+                <div class="tool-card" onclick="repair(this)">Özveri</div>
+                <div class="tool-card" onclick="repair(this)">Zaman</div>
+                <div class="tool-card" onclick="repair(this)">Sevgi</div>
+            </div>
+        </div>
+
+        <div id="final-speech">
+            <p>"Güvenini ve sevgini sarstım farkındayım be bunu kolayca düzeltemeyeceğimi düzeltsem bile her şeyin eskisi gibi olmayacağını da biliyorum sadece seni kaybetmektense elimden ne geliyosa onu yapmak istiyorum <br><br>
+            Bu yüzden sürekli ve sürekli denemeye telafi etmek için uğraşmaya devam edicem seni her şeyden çok seviyorum sen benim yaşam amacım hayatımın anlamısın olurda bir şekilde toparlayabilirsem sana yaşattığım her şeyi elime geçen ilk fırsatta telafi edicem seni o kadar mutlu edicem ki bir daha asla ama asla böyle duygular yaşamicaksın sen benim her şeyimsin sevgilim ilk ve son aşkımsın seni her şeyden ve herkesten daha çok seviyorum elimden her şeyimi alsınlar ama seni bana bıraksınlar bebeğim her şey için özür dilerim senden "</p>
+            <button onclick="location.reload()" style="background:none; border:1px solid var(--neon-green); color:white; padding:10px; cursor:pointer; margin-top:30px;">SİSTEMİ YENİDEN BAŞLAT</button>
         </div>
     </div>
 
-    <!-- Yüzleşme Ekranı -->
-    <div id="deduction-overlay" class="overlay">
-        <div class="modal-box" id="deduction-box">
-            <h2 style="color:#fff; border-bottom:1px solid #333; padding-bottom:10px;">BÜYÜK YÜZLEŞME</h2>
-            <p style="color:#aaa; font-size:14px;">Bütün kanıtları topladın. Artık katili köşeye sıkıştırma vakti.</p>
-            
-            <div class="deduct-group">
-                <label>1. KATİL KİM?</label>
-                <select id="sel-suspect">
-                    <option value="">-- Şüpheli Seç --</option>
-                    <option value="Hizmetçi">Hizmetçi (Mutfaktaydı)</option>
-                    <option value="Yeğen">Yeğen (Miras Bekliyor)</option>
-                    <option value="Çırak">Çırak (Dükkanın Varisi)</option>
-                </select>
-            </div>
-            
-            <div class="deduct-group">
-                <label>2. CİNAYET SEBEBİ HANGİ KANIT?</label>
-                <select id="sel-motive">
-                    <option value="">-- Envanterden Kanıt Seç --</option>
-                </select>
-            </div>
+    <script>
+        // Terminal Arka Planı
+        const term = document.getElementById('terminal-bg');
+        for(let i=0; i<50; i++) term.innerHTML += "SYS_LOG: BOOTING_SEQUENCE_CORE_" + Math.random().toString(16).slice(2) + "<br>";
 
-            <div class="deduct-group">
-                <label>3. CİNAYET SİLAHI HANGİ KANIT?</label>
-                <select id="sel-weapon">
-                    <option value="">-- Envanterden Kanıt Seç --</option>
-                </select>
-            </div>
+        let selected = null;
+        let connections = 0;
+        const canvas = document.getElementById('svg-canvas');
 
-            <div style="text-align: right; margin-top: 30px;">
-                <button onclick="closeDeduction()" style="background:#333; color:#fff;">Geri Dön</button>
-                <button onclick="submitDeduction()" style="background:var(--alert); color:#fff;">SUÇLAMAYI YAP</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // --- OYUN VERİ TABANI ---
-    let inventory = [];
-    let selectedItem = null;
-    let currentRoom = null;
-    let sysMsgTimer = null;
-    let activePuzzle = null;
-
-    let flags = {
-        doorUnlocked: false,
-        darkRoomLit: false,
-        safeUnlocked: false,
-        clockFixed: false,
-        secretRoomOpen: false,
-        foundWeapon: false
-    };
-
-    // Sahne ve İpucu (Node) Tanımlamaları
-    const rooms = {
-        alley: {
-            img: "https://images.unsplash.com/photo-1509644851169-2acc08aa25b5?q=80&w=1000&h=450&fit=crop",
-            intro: "Eski saatçi ustasının malikanesinin arka kapısındasın. Yağmur yağıyor, kapı kilitli.",
-            nodes: [
-                { id: "trash", icon: "🔍", x: "20%", y: "80%", action: () => {
-                    if(!inventory.includes("Boş Şişe")) {
-                        showDialog("Çöpü karıştırdın. Kırık bir cam şişe ve ezilmiş, paslı bir pil buldun.");
-                        addItem("Boş Şişe"); addItem("Paslı Pil");
-                    } else showDialog("Çöpte farelerden başka bir şey kalmadı.");
-                }},
-                { id: "doormat", icon: "🔍", x: "60%", y: "85%", action: () => {
-                    if(!inventory.includes("Paslı Kapı Anahtarı")) {
-                        showDialog("Paspası kaldırdın. Tahmin ettiğim gibi... Eski, paslı bir anahtar.");
-                        addItem("Paslı Kapı Anahtarı");
-                    } else showDialog("Paspasın altı artık boş.");
-                }},
-                { id: "door", icon: "🚪", x: "50%", y: "45%", action: () => {
-                    if(flags.doorUnlocked) { changeRoom("hallway"); } 
-                    else if(selectedItem === "Paslı Kapı Anahtarı") {
-                        flags.doorUnlocked = true; removeItem("Paslı Kapı Anahtarı");
-                        showSysMsg("Kapı Kilidi Açıldı!"); showDialog("Anahtar zor da olsa döndü. İçeri girebilirsin.");
-                        changeRoom("hallway");
-                    } else { showDialog("Kapı kilitli. Sağlam bir tahta kapı, zorlayarak açılamaz."); }
-                }}
-            ]
-        },
-        hallway: {
-            img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&h=450&fit=crop",
-            intro: "İçerisi toz kokuyor. Uzun bir hol var. Karşıda çalışma odası, solda salon kapısı, sağda karanlık bir koridor.",
-            nodes: [
-                { id: "coat", icon: "🔍", x: "25%", y: "50%", action: () => {
-                    if(!inventory.includes("Pilsiz Fener") && !inventory.includes("El Feneri")) {
-                        showDialog("Askıdaki eski paltonun cebini yokladın. İçinden pilleri bitmiş metal bir el feneri çıktı.");
-                        addItem("Pilsiz Fener");
-                    } else showDialog("Paltonun cepleri boş.");
-                }},
-                { id: "clock", icon: "🕰️", x: "15%", y: "30%", action: () => {
-                    if(flags.clockFixed) {
-                        showDialog("Saat tıkır tıkır çalışıyor. Kütüphanenin arkasındaki gizli atölye kapısı açık.");
-                    } else if(selectedItem === "Altın Akrep") {
-                        flags.clockFixed = true; removeItem("Altın Akrep");
-                        showSysMsg("Gizli Geçit Açıldı!");
-                        showDialog("Akrebi yerine taktın. Saat çan çalmaya başladı! Karanlık koridorda ağır bir kapı açıldı.");
-                    } else {
-                        showDialog("Büyük bir sarkaçlı duvar saati. Saat tam '08:45'te durmuş. Saatin 'Akrebi' (küçük ibresi) zorla sökülmüş.");
+        document.querySelectorAll('.socket').forEach(s => {
+            s.addEventListener('click', () => {
+                if(!selected) {
+                    selected = s;
+                    s.classList.add('active');
+                } else {
+                    if(selected === s) {
+                        s.classList.remove('active');
+                        selected = null;
+                        return;
                     }
-                }},
-                { id: "dark_hall", icon: "🚪", x: "85%", y: "60%", action: () => {
-                    if(flags.secretRoomOpen) { changeRoom("workshop"); } 
-                    else if(flags.clockFixed && flags.darkRoomLit) {
-                        flags.secretRoomOpen = true; changeRoom("workshop");
-                    } else if(selectedItem === "El Feneri") {
-                        flags.darkRoomLit = true;
-                        showDialog("Fenerle karanlık koridoru aydınlattın. Karşıda ustanın çalışma odası var.");
-                        changeRoom("study");
-                    } else if(flags.darkRoomLit) { changeRoom("study"); } 
-                    else { showDialog("Koridor zifiri karanlık. Işık olmadan oraya girmek imkansız."); }
-                }},
-                { id: "parlor_door", icon: "🛋️", x: "45%", y: "55%", action: () => {
-                    changeRoom("parlor");
-                }}
-            ]
-        },
-        study: {
-            img: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=1000&h=450&fit=crop",
-            intro: "Maktulün çalışma odası. Kağıtlar her yere saçılmış, belli ki katil bir şey aramış.",
-            nodes: [
-                { id: "desk", icon: "🔍", x: "40%", y: "70%", action: () => {
-                    if(!inventory.includes("Yırtık Not (Sol)") && !inventory.includes("Şifreli Not")) {
-                        showDialog("Masanın üzerinde mürekkep lekeli bir notun sol yarısı duruyor: 'Zamanı anlamak için...'");
-                        addItem("Yırtık Not (Sol)"); addItem("Büyüteç");
-                    } else showDialog("Masanın çekmeceleri zorlanmış ama içleri boş.");
-                }},
-                { id: "books", icon: "📚", x: "80%", y: "40%", action: () => {
-                    if(!inventory.includes("Yırtık Not (Sağ)") && !inventory.includes("Şifreli Not")) {
-                        if(selectedItem === "Büyüteç") {
-                            showDialog("Büyüteçle kalın ciltli kitabı inceledin. Sayfaların arasına gizlenmiş notun sağ yarısını buldun: '...saati tersine çevirmelisin.'");
-                            addItem("Yırtık Not (Sağ)");
-                        } else {
-                            showDialog("Kütüphanede yüzlerce kitap var. Birinin sırtında çıplak gözle okunamayacak kadar ufak bir yazı var.");
-                        }
-                    } else { showDialog("Kitaplarda başka bir ipucu görünmüyor."); }
-                }},
-                { id: "safe", icon: "🧰", x: "65%", y: "85%", action: () => {
-                    if(flags.safeUnlocked) {
-                        showDialog("Kasa açık. İçindekileri çoktan aldın.");
-                    } else {
-                        showDialog("Yerde çelik bir kasa var. 'Zaman Kodu' adında tuşlu bir kilidi var.");
-                        openPadlock("Holdeki saat kaçta durmuştu? Ve şifreli not sana ne yapmanı söylüyor?", "5480", () => {
-                            flags.safeUnlocked = true;
-                            showSysMsg("Kasa Açıldı!");
-                            showDialog("Tık! Kasa açıldı. İçinden 'Altın Akrep' ve yeni yazılmış bir 'Değiştirilmiş Vasiyetname' çıktı.");
-                            addItem("Altın Akrep"); addItem("Değiştirilmiş Vasiyetname");
-                        });
-                    }
-                }},
-                { id: "back", icon: "⬅️", x: "10%", y: "90%", action: () => { changeRoom("hallway"); } }
-            ]
-        },
-        workshop: {
-            img: "https://images.unsplash.com/photo-1519074063912-ad2fe3f51b6e?q=80&w=1000&h=450&fit=crop",
-            intro: "Saatin arkasındaki gizli geçit seni ustanın özel atölyesine getirdi. Katil, cinayetten sonra buraya saklanmış olmalı.",
-            nodes: [
-                { id: "tools", icon: "🛠️", x: "50%", y: "60%", action: () => {
-                    if(!flags.foundWeapon) {
-                        flags.foundWeapon = true;
-                        showSysMsg("CİNAYET SİLAHI BULUNDU!");
-                        showDialog("Çalışma tezgahının altında kana bulanmış ağır bir çekiç ve bir önlük buldun! Önlüğün üzerinde çırağın isim baş harfleri işlenmiş. Yüzleşme için Salona dönmelisin.");
-                        addItem("Kanlı Önlük ve Çekiç");
-                    } else {
-                        showDialog("Atölyede başka bir delil kalmadı. Tüm parçalar birleşti, artık salona gitme vakti.");
-                    }
-                }},
-                { id: "back", icon: "⬅️", x: "10%", y: "90%", action: () => { changeRoom("hallway"); } }
-            ]
-        },
-        parlor: {
-            img: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=1000&h=450&fit=crop",
-            intro: "Malikane Salonu. Cinayet işlendiğinde evde olan üç şüpheli burada bekliyor.",
-            nodes: [
-                { id: "maid", icon: "👤", x: "30%", y: "50%", action: () => {
-                    showDialog("HİZMETÇİ: 'Cinayet saati olan 08:45'te mutfaktaydım dedektif. Yaşlı ustanın kimseye zararı yoktu.'");
-                }},
-                { id: "nephew", icon: "👤", x: "50%", y: "50%", action: () => {
-                    showDialog("YEĞEN: 'Amcam bana beş kuruş bırakmayacağını söylemişti, bütün mirasını o beceriksiz çırağa bırakacaktı. Onu ben öldürmedim!'");
-                }},
-                { id: "apprentice", icon: "👤", x: "70%", y: "50%", action: () => {
-                    showDialog("ÇIRAK: 'Ustam beni evladı gibi severdi, dükkanı bana bırakacağına söz vermişti. Ben ona asla zarar vermem.'");
-                }},
-                { id: "deduction_board", icon: "⚖️", x: "50%", y: "85%", action: () => {
-                    if(flags.foundWeapon && flags.safeUnlocked) {
-                        startDeduction();
-                    } else {
-                        showDialog("Yüzleşme için henüz hazır değilsin. Cinayet silahını ve sebebini kesin olarak kanıtlayan delilleri bulmalısın.");
-                    }
-                }},
-                { id: "back", icon: "⬅️", x: "10%", y: "90%", action: () => { changeRoom("hallway"); } }
-            ]
-        }
-    };
-
-    // --- TEMEL FONKSİYONLAR ---
-
-    function showDialog(text) { document.getElementById("dialog-box").innerHTML = text; }
-
-    function showSysMsg(text) {
-        const msg = document.getElementById("sys-msg");
-        msg.innerText = text; msg.style.opacity = 1;
-        clearTimeout(sysMsgTimer);
-        sysMsgTimer = setTimeout(() => { msg.style.opacity = 0; }, 3000);
-    }
-
-    function addItem(itemName) {
-        inventory.push(itemName); renderInventory();
-    }
-
-    function removeItem(itemName) {
-        inventory = inventory.filter(i => i !== itemName);
-        if(selectedItem === itemName) selectedItem = null;
-        renderInventory();
-    }
-
-    // --- ENVANTER VE BİRLEŞTİRME (CRAFTING) SİSTEMİ ---
-
-    const recipes = {
-        "Pilsiz Fener+Paslı Pil": "El Feneri",
-        "Paslı Pil+Pilsiz Fener": "El Feneri",
-        "Yırtık Not (Sol)+Yırtık Not (Sağ)": "Şifreli Not",
-        "Yırtık Not (Sağ)+Yırtık Not (Sol)": "Şifreli Not"
-    };
-
-    function handleItemClick(itemName) {
-        if(selectedItem && selectedItem !== itemName) {
-            let combo = selectedItem + "+" + itemName;
-            if(recipes[combo]) {
-                let newItem = recipes[combo];
-                removeItem(selectedItem); removeItem(itemName); addItem(newItem);
-                showSysMsg("Yeni Eşya Üretildi: " + newItem);
-                if(newItem === "Şifreli Not") showDialog("Notu birleştirdin: 'Zamanı anlamak için, saati tersine çevirmelisin.'");
-                selectedItem = null; renderInventory(); return;
-            } else {
-                showSysMsg("Bu iki eşya birleştirilemez!");
-                selectedItem = itemName; 
-            }
-        } 
-        else if (selectedItem === itemName) { selectedItem = null; } 
-        else { selectedItem = itemName; }
-        renderInventory();
-    }
-
-    function renderInventory() {
-        const slots = document.getElementById("inv-slots");
-        slots.innerHTML = "";
-        inventory.forEach(item => {
-            let div = document.createElement("div");
-            div.className = "item";
-            if(selectedItem === item) div.classList.add("selected");
-            div.innerText = item;
-            div.onclick = () => handleItemClick(item);
-            slots.appendChild(div);
-        });
-    }
-
-    // --- SAHNE YÖNETİMİ ---
-
-    function changeRoom(roomId) {
-        currentRoom = roomId; selectedItem = null; renderInventory();
-        const sceneImg = document.getElementById("scene-img");
-        sceneImg.style.opacity = 0;
-        document.getElementById("nodes-container").innerHTML = "";
-        
-        setTimeout(() => {
-            const roomData = rooms[roomId];
-            sceneImg.src = roomData.img; showDialog(roomData.intro);
-            
-            roomData.nodes.forEach(node => {
-                let div = document.createElement("div");
-                div.className = "node";
-                div.style.left = node.x; div.style.top = node.y;
-                div.innerText = node.icon; div.title = "İncele"; div.onclick = node.action;
-                document.getElementById("nodes-container").appendChild(div);
+                    createCable(selected, s);
+                    selected.classList.remove('active');
+                    selected = null;
+                    connections++;
+                    if(connections === 4) triggerBurn();
+                }
             });
-            sceneImg.style.opacity = 1;
-        }, 500); 
-    }
-
-    // --- ŞİFRE KUTUSU ---
-
-    function openPadlock(hint, answer, onSuccess) {
-        activePuzzle = { answer: answer, success: onSuccess };
-        document.getElementById("pad-hint").innerText = hint;
-        document.getElementById("pad-input").value = "";
-        document.getElementById("padlock-overlay").style.display = "flex";
-        document.getElementById("pad-input").focus();
-    }
-
-    function closePadlock() {
-        document.getElementById("padlock-overlay").style.display = "none";
-        activePuzzle = null;
-    }
-
-    function checkPassword() {
-        if(activePuzzle) {
-            let val = document.getElementById("pad-input").value.trim();
-            if(val === activePuzzle.answer) {
-                closePadlock(); activePuzzle.success();
-            } else {
-                document.getElementById("pad-hint").innerHTML = "<span style='color:var(--alert);'>YANLIŞ ŞİFRE! Mekanizma kilitlendi.</span><br>İpucu: Saat kaçta durdu? Not ne diyordu?";
-                document.getElementById("pad-input").value = "";
-            }
-        }
-    }
-
-    // --- BÜYÜK YÜZLEŞME (DEDUCTION) SİSTEMİ ---
-
-    function startDeduction() {
-        const motiveSelect = document.getElementById("sel-motive");
-        const weaponSelect = document.getElementById("sel-weapon");
-        
-        // Sadece bir kez doldurmak için içeriği sıfırla ve 'Seç' opsiyonunu ekle
-        motiveSelect.innerHTML = '<option value="">-- Envanterden Kanıt Seç --</option>';
-        weaponSelect.innerHTML = '<option value="">-- Envanterden Kanıt Seç --</option>';
-
-        // Envanterdeki tüm eşyaları opsiyon olarak ekle
-        inventory.forEach(item => {
-            motiveSelect.innerHTML += `<option value="${item}">${item}</option>`;
-            weaponSelect.innerHTML += `<option value="${item}">${item}</option>`;
         });
 
-        document.getElementById("sel-suspect").value = "";
-        document.getElementById("deduction-overlay").style.display = "flex";
-    }
+        function createCable(el1, el2) {
+            const b = document.getElementById('board').getBoundingClientRect();
+            const r1 = el1.getBoundingClientRect();
+            const r2 = el2.getBoundingClientRect();
 
-    function closeDeduction() {
-        document.getElementById("deduction-overlay").style.display = "none";
-    }
+            const x1 = r1.left - b.left + 25;
+            const y1 = r1.top - b.top + 25;
+            const x2 = r2.left - b.left + 25;
+            const y2 = r2.top - b.top + 25;
 
-    function submitDeduction() {
-        let suspect = document.getElementById("sel-suspect").value;
-        let motive = document.getElementById("sel-motive").value;
-        let weapon = document.getElementById("sel-weapon").value;
-
-        if(!suspect || !motive || !weapon) {
-            alert("Lütfen tüm seçimleri yapın dedektif!");
-            return;
-        }
-
-        // DOĞRU CEVAP KONTROLÜ
-        if(suspect === "Çırak" && motive === "Değiştirilmiş Vasiyetname" && weapon === "Kanlı Önlük ve Çekiç") {
-            document.getElementById("deduction-overlay").style.display = "none";
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const d = `M${x1},${y1} C${x1 + 150},${y1} ${x2 - 150},${y2} ${x2},${y2}`;
             
-            // Kazanma Ekranı
-            document.getElementById("game-container").innerHTML = `
-                <div style="text-align:center; padding:50px; background:#0a0c0f; width:100%; height:100%; box-sizing:border-box; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                    <h1 style="color:var(--accent); font-family:'Cormorant Garamond', serif; font-size:40px;">DAVAYI ÇÖZDÜN DEDEKTİF! 🏆</h1>
-                    <p style="font-size:18px; line-height:1.6; max-width:700px; color:#ccc;">
-                        Kanlı önlüğü ve çekici masaya fırlattığında Çırak'ın yüzü bembeyaz oldu.<br><br>
-                        "Ustam bana yalan söyledi!" diye bağırdı Çırak. "Dükkanı bana bırakacağını söyleyip dururdu, sonra o gece masasında vasiyetnameyi değiştirip her şeyi o şımarık yeğenine bırakacağını okudum. Gözüm döndü... Saatin akrebini söküp kasaya sakladıktan sonra arkamı döndüğümde bana gülüyordu. Onu çekiçle susturmak zorunda kaldım!"<br><br>
-                        Kusursuz çıkarımların sayesinde bir katil daha demir parmaklıklar ardına gönderildi. Mükemmel bir iş çıkardın!
-                    </p>
-                    <button onclick="location.reload()" style="margin-top:30px; padding:15px 30px; background:var(--accent); color:#000; font-family:'Special Elite'; font-size:18px; cursor:pointer; border:none; border-radius:5px;">YENİ BİR DAVA İÇİN TEKRAR OYNA</button>
-                </div>
-            `;
-        } else {
-            alert("HAKİM DELİLLERİ YETERSİZ BULDU!\nEşleştirmelerin birbiriyle veya suçladığın kişiyle uyuşmuyor. Yalan söyleyen kim? Çıkarımlarını gözden geçirip tekrar dene.");
+            path.setAttribute('d', d);
+            path.classList.add('cable');
+            
+            if(el1.dataset.color === 'yellow' || el2.dataset.color === 'yellow') {
+                path.setAttribute('stroke', 'url(#grad)');
+                canvas.innerHTML += `
+                    <defs>
+                        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:yellow" />
+                            <stop offset="100%" style="stop-color:purple" />
+                        </linearGradient>
+                    </defs>`;
+            } else {
+                path.setAttribute('stroke', el1.dataset.color);
+            }
+            canvas.appendChild(path);
         }
-    }
 
-    // Oyunu Başlat
-    window.onload = () => { changeRoom("alley"); };
+        function triggerBurn() {
+            setTimeout(() => {
+                document.getElementById('header-status').innerText = "ERROR: TRUST_VIOLATION DETECTED";
+                document.getElementById('header-status').style.color = "red";
+                document.getElementById('main-wrapper').classList.add('burning');
+                
+                setTimeout(() => {
+                    document.getElementById('overlay').style.display = 'flex';
+                    setTimeout(() => {
+                        document.getElementById('fail-ui').style.display = 'none';
+                        document.getElementById('repair-ui').style.display = 'block';
+                    }, 4000);
+                }, 1000);
+            }, 500);
+        }
 
-</script>
+        let repairCount = 0;
+        function repair(btn) {
+            btn.classList.add('used');
+            repairCount++;
+            if(repairCount === 4) {
+                document.getElementById('repair-ui').style.display = 'none';
+                document.getElementById('final-speech').style.display = 'block';
+                document.getElementById('overlay').style.background = "radial-gradient(circle, #0a2408 0%, #000 100%)";
+            }
+        }
+    </script>
 </body>
-</html>
+</html
